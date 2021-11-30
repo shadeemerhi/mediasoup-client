@@ -8,13 +8,13 @@ const SocketProvider = ({ id, children }) => {
   const [socket, setSocket] = useState(null);
 
   useEffect(() => {
-    const newSocket = io('http://localhost:4000/mediasoup');
-    setSocket(newSocket);
+    // const newSocket = io('http://localhost:4000/mediasoup');
+    // setSocket(newSocket);
 
-    return () => {
-      newSocket.disconnect();
-      newSocket.off();
-    }
+    // return () => {
+    //   newSocket.disconnect();
+    //   newSocket.off();
+    // }
   }, []);
 
   const value = {

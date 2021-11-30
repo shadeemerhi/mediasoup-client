@@ -1,47 +1,76 @@
-import io from 'socket.io-client';
-
+import io from "socket.io-client";
+import * as mediasoupClient from 'mediasoup-client';
 
 export default class RoomClient {
-  constructor({
-    roomId,
-    userId,
-    produce,
-    consume
-  }) {
-    this._userId = userId;
+    constructor({ roomName, userId, produce, consume }) {
 
-    this._produce = produce;
+        this._roomName = roomName;
 
-    this._consume = consume;
+        this._userId = userId;
 
-    this._socket = null;
+        this._produce = produce;
 
-    this._recvTransport = null;
+        this._consume = consume;
 
-    this._sendTransport = null;
+        this._socket = null;
 
-    this._webcamProducer = null;
+        // Media Soup parameters
+        this._mediasoupDevice = null;
 
-    this._consumers = new Map();
+        this._recvTransport = null;
 
-  }
+        this._sendTransport = null;
 
-  close() {
-    console.log('CLOSING CONNECTIONS');
-    // close socket connections and transports
-    this._socket.disconnect();
-    this._socket.off();
-  }
+        this._webcamProducer = null;
 
-  async join() {
-    console.log('JOIN METHOD BEING CALLED');
-    const socketConnection = io('http://localhost:4000/mediasoup');
-    this._socket = socketConnection;
+        this._consumers = new Map();
+    }
 
-    this._socket.on('connection-success', ({ socketId }) => {
-      console.log('SUCCESSFUL SOCKET CONNECTION', socketId);
-    });
+    close() {
+        console.log("CLOSING CONNECTIONS");
+        // close socket connections and transports
+        this._socket.disconnect();
+        this._socket.off();
+    }
 
-    console.log('HERE IS THIS', this);
-  }
+    async join() {
+        console.log("JOIN METHOD BEING CALLED");
+        const socketConnection = io("http://localhost:4000/mediasoup");
+        this._socket = socketConnection;
+
+        this._socket.on("connection-success", ({ socketId }) => {
+            console.log("SUCCESSFUL SOCKET CONNECTION", socketId);
+            this._initializeRoom();
+        });
+
+        // Close mediasoup Transports.
+        if (this._sendTransport) {
+            this._sendTransport.close();
+            this._sendTransport = null;
+        }
+
+        if (this._recvTransport) {
+            this._recvTransport.close();
+            this._recvTransport = null;
+        }
+    }
+
+    async _initializeRoom() {
+      try {
+        this._mediasoupDevice = new mediasoupClient.Device();
+
+        // Get routerRtpCapabilities from the server
+        this._socket.emit('joinRoom', { roomName: this._roomName, isAdmin: this._produce }, async (data) => {
+          const routerRtpCapabilities = data.rtpCapabilities;
+          await this.loadDevice(routerRtpCapabilities);
+          console.log('HERE IS THIS', this);
+        })
+      } catch (error) {
+        
+      }
+    }
+
+    async loadDevice(routerRtpCapabilities) {
+      await this._mediasoupDevice.load({ routerRtpCapabilities });
+    }
 }

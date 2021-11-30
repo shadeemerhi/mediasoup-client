@@ -63,10 +63,43 @@ export default class RoomClient {
         this._socket.emit('joinRoom', { roomName: this._roomName, isAdmin: this._produce }, async (data) => {
           const routerRtpCapabilities = data.rtpCapabilities;
           await this.loadDevice(routerRtpCapabilities);
-          console.log('HERE IS THIS', this);
+
+          if (this._produce) {
+            this._socket.emit('createWebRtcTransport', { consumer: this._consume }, ({ params }) => {
+
+              if (params.error) {
+                console.log(params.error);
+                throw new Error(params.error);
+              }
+
+              this._sendTransport = this._mediasoupDevice.createSendTransport(params);
+
+              // Send transport event listeners
+              this._sendTransport.on('connect', async ({ dtlsParameters}, callback, errback) => {
+                this._socket.emit('transport-connect', {
+                  dtlsParameters
+                }, () => {
+                  console.log('TRANSPORT CONNECTED');
+                  callback();
+                });
+              });
+
+              this._sendTransport.on('produce', async (parameters, callback, errback) => {
+                const { kind, rtpParameters, appData } = parameters;
+
+                this._socket.emit('transport-produce', { kind, rtpParameters, appData }, ({ id, producersExist }) => {
+                  /**
+                   * Tell the transport that parameters were transmitted and provide with the
+                   * server-side producer's id
+                   */
+                  callback({ id });
+                });
+              })
+            })
+          }
         })
       } catch (error) {
-        
+        console.log('initializeRoom() error');
       }
     }
 

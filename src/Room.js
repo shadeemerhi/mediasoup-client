@@ -57,6 +57,7 @@ const Room = () => {
             userId: "12345",
             produce: isProducing,
             consume: isConsuming,
+            localVideo: localVideo
         });
 
         roomClient.join();

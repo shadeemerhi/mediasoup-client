@@ -446,31 +446,15 @@ const Room = () => {
                         },
                     ];
 
-                    // OLD PRE-REACT STUFF
-                    // create a new div element for the new consumer media
-                    // and append to the video container
-                    // const newElem = document.createElement("div");
-                    // newElem.setAttribute("id", `td-${remoteProducerId}`);
-                    // newElem.setAttribute("class", "remoteVideo");
-                    // newElem.innerHTML =
-                    //     '<video id="' +
-                    //     remoteProducerId +
-                    //     '" autoplay muted class="video" ></video>';
-                    // // videoContainer.appendChild(newElem);
-
                     // destructure and retrieve the video track from the producer
                     const { track } = consumer;
                     console.log("HERE IS TRACK", track);
-
-                    // document.getElementById(remoteProducerId).srcObject =
-                    //     new MediaStream([track]);
 
                     remoteVideo.current.srcObject = new MediaStream([track]);
                     remoteVideo.current.style.border = '2px solid red';
 
                     // the server consumer started with media paused
                     // so we need to inform the server to resume
-                    console.log("NEW CONSUMER ID", consumer.id);
                     socket.emit("consumer-resume", {
                         serverConsumerId: params.serverConsumerId,
                     });

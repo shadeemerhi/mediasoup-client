@@ -1,8 +1,16 @@
-import io from "socket.io-client";
+import io, { connect } from "socket.io-client";
 import * as mediasoupClient from "mediasoup-client";
 
 export default class RoomClient {
-    constructor({ roomName, userId, produce, consume, localVideo, remoteVideo }) {
+    constructor({
+        roomName,
+        userId,
+        produce,
+        consume,
+        localVideo,
+        remoteVideo,
+        audioElem
+    }) {
         this._roomName = roomName;
 
         this._userId = userId;
@@ -10,6 +18,8 @@ export default class RoomClient {
         this._localVideo = localVideo;
 
         this._remoteVideo = remoteVideo;
+
+        this._audioElem = audioElem;
 
         this._produce = produce;
 
@@ -25,6 +35,8 @@ export default class RoomClient {
         this._sendTransport = null;
 
         this._webcamProducer = null;
+
+        this._micProducer = null;
 
         this._consumers = new Map();
     }
@@ -46,9 +58,8 @@ export default class RoomClient {
             this._initializeRoom();
         });
 
-
-        this._socket.on('new-consumer', () => {
-            console.log('NEW CONSUMER!!!');
+        this._socket.on("new-consumer", () => {
+            console.log("NEW CONSUMER!!!");
         });
 
         // Close mediasoup Transports.
@@ -107,7 +118,7 @@ export default class RoomClient {
                 this._sendTransport.on(
                     "connect",
                     async ({ dtlsParameters }, callback, errback) => {
-                      console.log('INSIDE CONNECT EVENT');
+                        console.log("INSIDE CONNECT EVENT");
                         this._socket.emit(
                             "transport-connect",
                             {
@@ -126,13 +137,13 @@ export default class RoomClient {
                     async (parameters, callback, errback) => {
                         // Wrap in tr
                         const { kind, rtpParameters, appData } = parameters;
-                        console.log('INSIDE PRODUCE EVENT');
+                        console.log("INSIDE PRODUCE EVENT", kind);
 
                         this._socket.emit(
                             "transport-produce",
                             { kind, rtpParameters, appData },
                             ({ id, producersExist }) => {
-                                console.log('HERE IS PRODUCER ID', id);
+                                console.log("HERE IS PRODUCER ID", id);
                                 /**
                                  * Tell the transport that parameters were transmitted and provide with the
                                  * server-side producer's id
@@ -144,6 +155,7 @@ export default class RoomClient {
                 );
 
                 this.enableVideo();
+                this.enableMic();
             }
         );
     }
@@ -183,55 +195,71 @@ export default class RoomClient {
                     }
                 );
 
-                this.consumeHost();
-                // this.getProducers();
-                console.log('EVERYTHING WORKS', this);
+                // this.consumeHost();
+                this.getProducers();
+                console.log("EVERYTHING WORKS", this);
             }
         );
     }
 
     async getProducers() {
-        this._socket.emit('getProducers', (producerIds) => {
-            console.log('HERE ARE PRODUCER IDS', producerIds);
-        })
+        this._socket.emit("getProducers", (producerIds) => {
+            console.log("HERE ARE PRODUCER IDS", producerIds);
+            producerIds.forEach(id => this.connectRecvTransport(id));
+            // this.connectRecvTransport(producerIds[1])
+        });
     }
 
     async consumeHost() {
-        console.log('INSIDE COMSUME HOST');
-        this._socket.emit("consumeHost", {
-            rtpCapabilities: this._mediasoupDevice.rtpCapabilities,
-            transportId: this._recvTransport.id,
-        }, async ({ params }) => {
-          if (params.error) {
-            console.log('Cannot consume', params.error);
-            return;
-          }
+        console.log("INSIDE COMSUME HOST");
+        this._socket.emit(
+            "consumeHost",
+            {
+                rtpCapabilities: this._mediasoupDevice.rtpCapabilities,
+                transportId: this._recvTransport.id,
+            },
+            async ({ params }) => {
+                if (params.error) {
+                    console.log("Cannot consume", params.error);
+                    return;
+                }
 
-          console.log('AFTER SERVER SIDE', params);
+                console.log("AFTER SERVER SIDE", params);
 
-          const { id, producerId, kind, rtpParameters, serverConsumerId } = params;
+                const {
+                    id,
+                    producerId,
+                    kind,
+                    rtpParameters,
+                    serverConsumerId,
+                } = params;
 
-          const consumer = await this._recvTransport.consume({
-            id,
-            producerId,
-            kind,
-            rtpParameters
-          });
+                const consumer = await this._recvTransport.consume({
+                    id,
+                    producerId,
+                    kind,
+                    rtpParameters,
+                });
 
-          const { track } = consumer;
-          console.log('HERE IS TRACK', track);
+                const { track } = consumer;
+                console.log("HERE IS TRACK", track);
 
-          this._remoteVideo.current.srcObject = new MediaStream([track]);
-          this._remoteVideo.current.style.border = "2px solid red";
+           
 
-          /**
-           * Issue here are consumer cannot be found on the server as I don't think it's
-           * currently being added right
-           */
-          this._socket.emit('consumer-resume', {
-            serverConsumerId
-          });
-        });
+                this._remoteVideo.current.srcObject = new MediaStream([track]);
+                this._remoteVideo.current.style.border = "2px solid red";
+
+                console.log("HERE IS THIS", this);
+
+                /**
+                 * Issue here are consumer cannot be found on the server as I don't think it's
+                 * currently being added right
+                 */
+                this._socket.emit("consumer-resume", {
+                    serverConsumerId,
+                });
+            }
+        );
     }
 
     async enableVideo() {
@@ -261,7 +289,7 @@ export default class RoomClient {
             },
         };
         const stream = await navigator.mediaDevices.getUserMedia({
-            audio: false,
+            audio: true,
             video: {
                 width: {
                     min: 640,
@@ -273,6 +301,7 @@ export default class RoomClient {
                 },
             },
         });
+        this._videoStream = stream;
 
         // Update UI
         this._localVideo.current.srcObject = stream;
@@ -298,7 +327,139 @@ export default class RoomClient {
         });
     }
 
+    async enableMic() {
+        if (this._micProducer) {
+            return;
+        }
+
+        if (!this._mediasoupDevice.canProduce("audio")) {
+            console.log("enableMic() cannot produce audio");
+            return;
+        }
+        console.log("INSIDE ENABLE MIC");
+        const stream = await navigator.mediaDevices.getUserMedia({
+            audio: true,
+        });
+        const track = stream.getAudioTracks()[0];
+        console.log("HERE IS TRACK", track);
+
+        this._micProducer = await this._sendTransport.produce({
+            track,
+            codecOptions: {
+                opusStereo: 1,
+                opusDtx: 1,
+            },
+        });
+
+        this._micProducer.on("transportclose", () => {
+            this._micProducer = null;
+        });
+
+        this._micProducer.on("trackended", () => {
+            this.disableMic();
+        });
+
+        console.log("HERE IS THIS", this);
+    }
+
+    async muteMic() {
+        console.log('INSIDE MUTE MIC');
+    }
+
     async loadDevice(routerRtpCapabilities) {
         await this._mediasoupDevice.load({ routerRtpCapabilities });
+    }
+
+
+    async connectRecvTransport(remoteProducerId) {
+        // consumerTransport,
+
+        // serverConsumerTransportId
+        console.log("INSIDE FUNCTION THING");
+        // for consumer, we need to tell the server first
+        // to create a consumer based on the rtpCapabilities and consume
+        // if the router can consume, it will send back a set of params as below
+        this._socket.emit(
+            "consume",
+            {
+                rtpCapabilities: this._mediasoupDevice.rtpCapabilities,
+                remoteProducerId,
+                serverConsumerTransportId: this._recvTransport.id,
+            },
+            async ({ params }) => {
+                if (params.error) {
+                    console.log("Cannot Consume");
+                    return;
+                }
+
+                console.log(`Consumer Params ${params}`);
+                // then consume with the local consumer transport
+                // which creates a consumer
+                console.log(
+                    "ABOUT TO CALL CLIENT SIDE CONSUME",
+                    remoteProducerId,
+                    params.producerId
+                );
+                const consumer = await this._recvTransport.consume({
+                    id: params.id,
+                    producerId: params.producerId,
+                    kind: params.kind,
+                    rtpParameters: params.rtpParameters,
+                });
+
+                // consumerTransports = [
+                //     ...consumerTransports,
+                //     {
+                //         // consumerTransport,
+                //         consumerTransport: recvTransport,
+                //         serverConsumerTransportId: params.id,
+                //         producerId: remoteProducerId,
+                //         consumer,
+                //     },
+                // ];
+
+                // destructure and retrieve the video track from the producer
+                const { track } = consumer;
+                console.log('HERE IS TRACK', track);
+                if (params.kind === 'audio') {
+                    const stream = new MediaStream;
+                    stream.addTrack(track)
+                    this._audioElem.current.srcObject = stream;
+
+                }
+
+                if (params.kind === 'video') {
+                    const stream = new MediaStream;
+                    stream.addTrack(track);
+                    this._remoteVideo.current.srcObject = stream;
+
+                    // this._remoteVideo.current.play().catch(error => console.log(error));
+
+                    this._remoteVideo.current.onplay = () => {
+                        console.log('THIS IS PLAYING LOL');
+                        this._audioElem.current.play().catch(error => console.log(error));
+                    }
+                }
+
+
+                // if (this._remoteVideo.current.srcObject) {
+                //     const newStream = this._remoteVideo.current.srcObject;
+                //     newStream.addTrack(track);
+                //     this._remoteVideo.current.srcObject = newStream;
+                //     console.log('NEW STREAM', newStream);
+                // }
+                // else {
+                // }
+                // this._remoteVideo.current.srcObject = new MediaStream([track]);
+
+                this._remoteVideo.current.style.border = "2px solid red";
+
+                // the server consumer started with media paused
+                // so we need to inform the server to resume
+                this._socket.emit("consumer-resume", {
+                    serverConsumerId: params.serverConsumerId,
+                });
+            }
+        );
     }
 }

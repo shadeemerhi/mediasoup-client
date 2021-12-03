@@ -39,13 +39,28 @@ const RoomWrapper = () => {
         };
     });
 
+    const handleMute = () => {
+        roomClient.current.muteMic();
+    }
+
+    const handleUnmute = () => {
+        roomClient.current.unmuteMic();
+    }
+
     return (
-        <Room roomClient={roomClient.current} localVideo={localVideo} />
+        <Room
+            roomClient={roomClient.current}
+            localVideo={localVideo}
+            remoteVideo={remoteVideo}
+            audioElem={audioElem}
+            handleMute={handleMute}
+            handleUnmute={handleUnmute}
+        />
     );
 };
 
-const Room = ({ roomClient, localVideo, remoteVideo, audioElem }) => {
-
+const Room = ({ roomClient, localVideo, remoteVideo, audioElem, handleMute, handleUnmute }) => {
+    console.log('HERE IS ROOM CLIENT', roomClient);
     return (
         <div>
             {isProducing && (
@@ -58,7 +73,8 @@ const Room = ({ roomClient, localVideo, remoteVideo, audioElem }) => {
                         ref={localVideo}
                         width={400}
                     />
-                    <button onClick={roomClient.muteMic}>Mute</button>
+                    <button onClick={handleMute}>Mute</button>
+                    <button onClick={handleUnmute}>Unmute</button>
                 </div>
             )}
             {!isProducing && (
@@ -71,13 +87,7 @@ const Room = ({ roomClient, localVideo, remoteVideo, audioElem }) => {
                     width={400}
                 />
             )}
-            <audio
-                autoPlay
-                playsInline
-                muted
-                controls
-                ref={audioElem}
-            />
+            <audio autoPlay playsInline muted controls ref={audioElem} />
         </div>
     );
 };

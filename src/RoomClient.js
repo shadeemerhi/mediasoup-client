@@ -362,8 +362,25 @@ export default class RoomClient {
         console.log("HERE IS THIS", this);
     }
 
-    async muteMic() {
-        console.log('INSIDE MUTE MIC');
+    muteMic() {
+        console.log('muteMic()');
+        this._micProducer.pause();
+
+        try {
+            this._socket.emit('pauseProducer', { producerId: this._micProducer.id })
+        } catch (error) {
+            console.log('muteMic() error');
+        }
+    }
+
+    unmuteMic() {
+        console.log('unmuteMic()');
+        this._socket.emit('resumeProducer', ({ producerId: this._micProducer.id }))
+        try {
+            this._micProducer.resume();
+        } catch (error) {
+            console.log(error);
+        }
     }
 
     async loadDevice(routerRtpCapabilities) {

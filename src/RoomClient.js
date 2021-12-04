@@ -62,6 +62,16 @@ export default class RoomClient {
             console.log("NEW CONSUMER!!!");
         });
 
+        this._socket.on('new-producer', ({ producerId }) => {
+            console.log('NEW PRODUCER', producerId);
+            this.connectRecvTransport(producerId);
+        });
+
+        this._socket.on('producer-closed', ({ remoteProducerId }) => {
+            console.log('THIS PRODUCER CLOSED', remoteProducerId);
+            this._remoteVideo.current.srcObject = null;
+        })
+
         // Close mediasoup Transports.
         if (this._sendTransport) {
             this._sendTransport.close();
@@ -211,7 +221,7 @@ export default class RoomClient {
     }
 
     async consumeHost() {
-        console.log("INSIDE COMSUME HOST");
+        console.log("INSIDE CONSUME HOST");
         this._socket.emit(
             "consumeHost",
             {
@@ -263,6 +273,8 @@ export default class RoomClient {
     }
 
     async enableVideo() {
+        if (this._webcamProducer) return;
+
         // Will move into config file
         let params = {
             // mediasoup params
@@ -343,6 +355,8 @@ export default class RoomClient {
         } catch (error) {
             console.log(error);
         }
+
+        this._webcamProducer = null;
 
     }
 

@@ -41,16 +41,19 @@ const RoomWrapper = () => {
 
     const handleMute = () => {
         roomClient.current.muteMic();
-    }
+    };
 
     const handleUnmute = () => {
         roomClient.current.unmuteMic();
-    }
+    };
 
     const handleVideoDisable = () => {
         roomClient.current.disableVideo();
-    }
+    };
 
+    const handleVideoEnable = () => {
+        roomClient.current.enableVideo();
+    };
 
     return (
         <Room
@@ -61,11 +64,21 @@ const RoomWrapper = () => {
             handleMute={handleMute}
             handleUnmute={handleUnmute}
             handleVideoDisable={handleVideoDisable}
+            handleVideoEnable={handleVideoEnable}
         />
     );
 };
 
-const Room = ({ roomClient, localVideo, remoteVideo, audioElem, handleMute, handleUnmute, handleVideoDisable }) => {
+const Room = ({
+    roomClient,
+    localVideo,
+    remoteVideo,
+    audioElem,
+    handleMute,
+    handleUnmute,
+    handleVideoDisable,
+    handleVideoEnable,
+}) => {
     return (
         <div>
             {isProducing && (
@@ -81,7 +94,7 @@ const Room = ({ roomClient, localVideo, remoteVideo, audioElem, handleMute, hand
                     <button onClick={handleMute}>Mute</button>
                     <button onClick={handleUnmute}>Unmute</button>
                     <button onClick={handleVideoDisable}>Disable Video</button>
-                    <button onClick={handleUnmute}>Enable Video</button>
+                    <button onClick={handleVideoEnable}>Enable Video</button>
                 </div>
             )}
             {!isProducing && (

@@ -301,7 +301,6 @@ export default class RoomClient {
                 },
             },
         });
-        this._videoStream = stream;
 
         // Update UI
         this._localVideo.current.srcObject = stream;
@@ -325,6 +324,26 @@ export default class RoomClient {
             console.log("transport ended");
             // Add cleanup
         });
+    }
+
+    async disableVideo() {
+        console.log('disableVideo()');
+
+        if (!this._webcamProducer) return;
+
+        this._webcamProducer.close();
+
+        // Remove producer from state
+
+        try {
+            // Add callback to handle error
+            this._socket.emit('closeProducer', { producerId: this._webcamProducer.id }, ({ error }) => {
+                if (error) throw new Error(error)
+            });
+        } catch (error) {
+            console.log(error);
+        }
+
     }
 
     async enableMic() {
@@ -366,11 +385,11 @@ export default class RoomClient {
         console.log('muteMic()');
         this._micProducer.pause();
 
-        try {
-            this._socket.emit('pauseProducer', { producerId: this._micProducer.id })
-        } catch (error) {
-            console.log('muteMic() error');
-        }
+        // try {
+        //     this._socket.emit('pauseProducer', { producerId: this._micProducer.id })
+        // } catch (error) {
+        //     console.log('muteMic() error');
+        // }
     }
 
     unmuteMic() {

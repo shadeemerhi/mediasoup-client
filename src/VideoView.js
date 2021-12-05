@@ -35,8 +35,8 @@ const VideoView = (props) => {
 
         // Need to add something so we don't hear our own audio
         if (!audioProducer?._paused && audioTrack) {
-          const stream = new MediaStream();
-          stream.addTrack(audioTrack);
+          // const stream = new MediaStream();
+          // stream.addTrack(audioTrack);
           // audioElem.current.srcObject = stream;
         }
         else {

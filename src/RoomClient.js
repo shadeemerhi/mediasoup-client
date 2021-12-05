@@ -3,7 +3,7 @@ import * as mediasoupClient from "mediasoup-client";
 
 // Redux
 import store from "./redux/store";
-import * as producerActions from '../src/redux/actions/producers';
+import * as mediasoupActions from './redux/actions/mediasoup';
 
 export default class RoomClient {
     constructor({
@@ -71,9 +71,14 @@ export default class RoomClient {
             this.connectRecvTransport(producerId);
         });
 
-        this._socket.on('producer-closed', ({ remoteProducerId }) => {
-            console.log('THIS PRODUCER CLOSED', remoteProducerId);
-            this._remoteVideo.current.srcObject = null;
+        this._socket.on('producer-closed', ({ consumerId, remoteProducerId }) => {
+            console.log('THIS PRODUCER CLOSED', remoteProducerId, consumerId);
+
+            // TODO - Dispatch to remove consumer from state as well
+            store.dispatch(mediasoupActions.removeConsumer(consumerId));
+
+
+            // this._remoteVideo.current.srcObject = null;
         })
 
         // Close mediasoup Transports.
@@ -334,7 +339,7 @@ export default class RoomClient {
         console.log('HERE IS WEBCAM PRODCUER', this._webcamProducer.id);
 
         // Add producer to state
-        store.dispatch(producerActions.addProducer({ ...this._webcamProducer }));
+        store.dispatch(mediasoupActions.addProducer({ ...this._webcamProducer }));
 
         this._webcamProducer.on("trackended", () => {
             console.log("track ended");
@@ -357,7 +362,7 @@ export default class RoomClient {
 
         // Remove producer from state
         console.log('BEFORE REMOVAL', this._webcamProducer.id);
-        store.dispatch(producerActions.removeProducer(this._webcamProducer.id));
+        store.dispatch(mediasoupActions.removeProducer(this._webcamProducer.id));
 
         try {
             // Add callback to handle error
@@ -397,7 +402,7 @@ export default class RoomClient {
         });
 
         // Add producer to state
-        store.dispatch(producerActions.addProducer({ ...this._micProducer }));
+        store.dispatch(mediasoupActions.addProducer({ ...this._micProducer }));
 
         this._micProducer.on("transportclose", () => {
             this._micProducer = null;
@@ -416,7 +421,7 @@ export default class RoomClient {
 
         try {
             this._socket.emit('pauseProducer', { producerId: this._micProducer.id }, () => {
-                store.dispatch(producerActions.pauseProducer(this._micProducer.id));
+                store.dispatch(mediasoupActions.pauseProducer(this._micProducer.id));
             })
         } catch (error) {
             console.log('muteMic() error');
@@ -426,7 +431,7 @@ export default class RoomClient {
     unmuteMic() {
         console.log('unmuteMic()');
         this._socket.emit('resumeProducer', { producerId: this._micProducer.id }, () => {
-            store.dispatch(producerActions.resumeProducer(this._micProducer.id));
+            store.dispatch(mediasoupActions.resumeProducer(this._micProducer.id));
         });
         try {
             this._micProducer.resume();
@@ -476,6 +481,10 @@ export default class RoomClient {
                     rtpParameters: params.rtpParameters,
                 });
 
+                store.dispatch(mediasoupActions.addConsumer({ ...consumer }));
+
+
+
                 // consumerTransports = [
                 //     ...consumerTransports,
                 //     {
@@ -491,24 +500,24 @@ export default class RoomClient {
                 const { track } = consumer;
                 console.log('HERE IS TRACK', track);
                 if (params.kind === 'audio') {
-                    const stream = new MediaStream;
-                    stream.addTrack(track)
-                    this._audioElem.current.srcObject = stream;
-                    this._audioElem.current.play().catch(error => console.log(error))
+                    // const stream = new MediaStream;
+                    // stream.addTrack(track)
+                    // this._audioElem.current.srcObject = stream;
+                    // this._audioElem.current.play().catch(error => console.log(error))
 
                 }
 
                 if (params.kind === 'video') {
-                    const stream = new MediaStream;
-                    stream.addTrack(track);
-                    this._remoteVideo.current.srcObject = stream;
+                    // const stream = new MediaStream;
+                    // stream.addTrack(track);
+                    // this._remoteVideo.current.srcObject = stream;
 
                     // this._remoteVideo.current.play().catch(error => console.log(error));
 
-                    this._remoteVideo.current.onplay = () => {
-                        console.log('THIS IS PLAYING LOL');
-                        this._audioElem.current.play().catch(error => console.log(error));
-                    }
+                    // this._remoteVideo.current.onplay = () => {
+                    //     console.log('THIS IS PLAYING LOL');
+                    //     this._audioElem.current.play().catch(error => console.log(error));
+                    // }
                 }
 
 
@@ -522,7 +531,7 @@ export default class RoomClient {
                 // }
                 // this._remoteVideo.current.srcObject = new MediaStream([track]);
 
-                this._remoteVideo.current.style.border = "2px solid red";
+                // this._remoteVideo.current.style.border = "2px solid red";
 
                 // the server consumer started with media paused
                 // so we need to inform the server to resume

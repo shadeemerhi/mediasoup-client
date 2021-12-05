@@ -1,14 +1,15 @@
-import { useContext } from "react";
 import "./App.css";
 import Room from "./Room";
-import SocketProvider from "./SocketProvider";
+
+import { Provider } from "react-redux";
+import store from "./redux/store";
 
 function App() {
-  return (
-    <SocketProvider>
-      <Room />
-    </SocketProvider>
-  )
+    return (
+        <Provider store={store}>
+            <Room />
+        </Provider>
+    );
 }
 
 export default App;

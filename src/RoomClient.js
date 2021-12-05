@@ -349,6 +349,7 @@ export default class RoomClient {
 
     async disableVideo() {
         console.log('disableVideo()');
+        console.log('HERE IS THIS', this);
 
         if (!this._webcamProducer) return;
 

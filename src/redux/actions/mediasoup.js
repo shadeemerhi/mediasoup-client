@@ -41,4 +41,14 @@ export const pauseConsumer = (consumerId) => ({
 export const resumeConsumer = (consumerId) => ({
   type: 'RESUME_CONSUMER',
   payload: { consumerId }
+});
+
+
+// Cleanup
+export const emptyProducers = () => ({
+    type: 'EMPTY_PRODUCERS',
+});
+
+export const emptyConsumers = () => ({
+    type: 'EMPTY_CONSUMERS',
 })

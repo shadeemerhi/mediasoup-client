@@ -42,6 +42,9 @@ const producers = (state = initialState, action) => {
                 [producerId]: newProducer,
             };
         }
+        case 'EMPTY_PRODUCERS': {
+            return {};
+        }
         default:
             return state;
     }

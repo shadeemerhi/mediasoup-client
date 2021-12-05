@@ -44,6 +44,9 @@ const consumers = (state = initialState, action) => {
                 [consumerId]: newConsumer,
             };
         }
+        case 'EMPTY_CONSUMERS': {
+            return {};
+        }
         default:
             return state;
     }

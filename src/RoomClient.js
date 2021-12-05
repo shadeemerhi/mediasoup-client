@@ -1,5 +1,9 @@
-import io, { connect } from "socket.io-client";
+import io from "socket.io-client";
 import * as mediasoupClient from "mediasoup-client";
+
+// Redux
+import store from "./redux/store";
+import * as producerActions from '../src/redux/actions/producers';
 
 export default class RoomClient {
     constructor({
@@ -273,7 +277,8 @@ export default class RoomClient {
     }
 
     async enableVideo() {
-        if (this._webcamProducer) return;
+        console.log('enableVideo()');
+        // if (this._webcamProducer) return;
 
         // Will move into config file
         let params = {
@@ -315,8 +320,8 @@ export default class RoomClient {
         });
 
         // Update UI
-        this._localVideo.current.srcObject = stream;
-        this._localVideo.current.style.border = "2px solid black";
+        // this._localVideo.current.srcObject = stream;
+        // this._localVideo.current.style.border = "2px solid black";
 
         const track = stream.getVideoTracks()[0];
 
@@ -326,6 +331,10 @@ export default class RoomClient {
         };
 
         this._webcamProducer = await this._sendTransport.produce(params);
+        console.log('HERE IS WEBCAM PRODCUER', this._webcamProducer.id);
+
+        // Add producer to state
+        store.dispatch(producerActions.addProducer({ ...this._webcamProducer }));
 
         this._webcamProducer.on("trackended", () => {
             console.log("track ended");
@@ -346,6 +355,8 @@ export default class RoomClient {
         this._webcamProducer.close();
 
         // Remove producer from state
+        console.log('BEFORE REMOVAL', this._webcamProducer.id);
+        store.dispatch(producerActions.removeProducer(this._webcamProducer.id));
 
         try {
             // Add callback to handle error
@@ -383,6 +394,9 @@ export default class RoomClient {
                 opusDtx: 1,
             },
         });
+
+        // Add producer to state
+        store.dispatch(producerActions.addProducer({ ...this._micProducer }));
 
         this._micProducer.on("transportclose", () => {
             this._micProducer = null;

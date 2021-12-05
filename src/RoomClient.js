@@ -6,19 +6,18 @@ import store from "./redux/store";
 import * as mediasoupActions from "./redux/actions/mediasoup";
 
 export default class RoomClient {
-    constructor({ roomName, userId, produce, consume }) {
-
+    constructor({ publicRoom, userId, produce, consume }) {
         // Private room id - to be renamed to uuid or something
-        this._roomName = roomName;
-        
+        this._roomName = null;
+
         // Public room id - will be admin username
-        this._publicRoomName = null;
+        this._publicRoomName = publicRoom;
 
         this._userId = userId;
 
-        this._produce = produce;
+        this._produce = null;
 
-        this._consume = consume;
+        this._consume = null;
 
         this._socket = null;
 
@@ -35,30 +34,50 @@ export default class RoomClient {
 
         this._consumers = new Map();
     }
-
-    close() {
-        console.log("CLOSING CONNECTIONS");
-        // close socket connections and transports
-        this._socket.disconnect();
-        this._socket.off();
-    }
-
-
-    // WILL BE RESPONSIBLE FOR ESTABLISHING SOCKET CONNECTION
-    async joinPublicRoom() {
-        console.log('JOINING PUBLIC ROOM');
+    // WILL BE RESPONSIBLE FOR ESTABLISHING SOCKET CONNECTION - PUBLIC ROOM EVENTS
+    async joinPublicRoom(publicRoomName) {
+        this._publicRoomName = publicRoomName;
+        console.log("JOINING PUBLIC ROOM", this._publicRoomName);
         const socketConnection = io("http://localhost:4000/mediasoup");
         this._socket = socketConnection;
+
+        // Should handle refresh case
+        if (this._roomName) {
+            console.log("THIS SHOULD NOT BE HAPPENING");
+            this.join();
+        }
 
         // emit join public room event
         this._socket.on("connection-success", ({ socketId }) => {
             console.log("SUCCESSFUL SOCKET CONNECTION", socketId);
-            this._initializeRoom();
+            // this._initializeRoom();
+            // Will emit join-public-room event of some kind
         });
     }
 
     // WILL BE RESPONSIBLE FOR MEDIA SOUP SOCKET EVENTS
-    async join() {
+    async join(
+        publicRoomId = this._publicRoomName,
+        privateRoomId = this._roomName,
+        produce = this._produce,
+        consume = this._consume
+    ) {
+
+        this._publicRoomName = publicRoomId;
+        this._roomName = privateRoomId;
+        this._produce = produce;
+        this._consume = consume;
+        // if (!this._produce) {
+        //     this._produce = produce;
+        // }
+
+        // if (!this._consume) {
+        //     this._consume = consume;
+        // }
+
+        // if (!this._roomName) {
+        //     this._roomName = privateRoomId;
+        // }
         console.log("JOIN METHOD BEING CALLED");
         // NEW
         // const socketConnection = io("http://localhost:4000/mediasoup");
@@ -71,6 +90,8 @@ export default class RoomClient {
         if (this._socket) {
             // Join private room
             this._initializeRoom();
+        } else {
+            this.joinPublicRoom(publicRoomId);
         }
 
         // this._socket.on("connection-success", ({ socketId }) => {
@@ -467,7 +488,12 @@ export default class RoomClient {
                 });
 
                 // Add consumer to state
-                store.dispatch(mediasoupActions.addConsumer({ ...consumer, _paused: params.producerPaused }));
+                store.dispatch(
+                    mediasoupActions.addConsumer({
+                        ...consumer,
+                        _paused: params.producerPaused,
+                    })
+                );
 
                 // the server consumer started with media paused
                 // so we need to inform the server to resume
@@ -477,4 +503,21 @@ export default class RoomClient {
             }
         );
     }
+
+    // Cleanup methods
+    leavePrivateRoom() {
+        this._socket.emit('leave-private-room');
+
+        // Producer
+        this._webcamProducer = null;
+        this._micProducer = null;
+    }
+
+    close() {
+        console.log("CLOSING CONNECTIONS");
+        // close socket connections and transports
+        this._socket.disconnect();
+        this._socket.off();
+    }
+
 }

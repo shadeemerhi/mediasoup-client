@@ -1,38 +1,47 @@
 import React, { useEffect, useRef } from "react";
+import { useParams, useLocation } from "react-router";
 
 import RoomClient from "./RoomClient";
 
+// Components
 import Admin from "./Admin";
 import Peer from "./Peer";
 
-const roomName = window.location.pathname.split("/")[1];
+// Redux
+import store from "./redux/store";
+import { emptyProducers, emptyConsumers } from './redux/actions/mediasoup';
 
-const isProducing = window.location.search.includes("admin");
-const isConsuming = !window.location.search.includes("admin");
+const PrivateRoom = ({ roomClient }) => {
 
-const PrivateRoom = () => {
-
-    const roomClient = useRef();
-
-    useEffect(() => {}, []);
+    const { room, privateId } = useParams();
+    const { search } = useLocation();
+    console.log('HERE ARE ROOM PARAMS', room, privateId, search);
+    const isProducing = search.includes('admin');
+    const isConsuming = !isProducing;
 
     useEffect(() => {
+        console.log('INSIDE UE PRIVATE', roomClient.current);
+
+        // For refresh case
         if (!roomClient.current) {
             roomClient.current = new RoomClient({
-                roomName,
-                userId: "12345",
-                produce: isProducing,
-                consume: isConsuming,
+                publicRoom: room,
+                userId: "12345"
             });
-
-            roomClient.current.join();
+            roomClient.current.join(room, privateId, isProducing, isConsuming);
         }
+        else {
+            roomClient.current.join(room, privateId, isProducing, isConsuming);
+        }
+        // Might have to add cleanup
         return () => {
-            if (roomClient.current) {
-                roomClient.current.close();
-            }
+            roomClient.current.leavePrivateRoom();
+
+            // Maybe check if existing first
+            store.dispatch(emptyProducers());
+            store.dispatch(emptyConsumers());
         };
-    });
+    }, [room, privateId, roomClient]);
 
     const handleMute = () => {
         roomClient.current.muteMic();
@@ -51,8 +60,10 @@ const PrivateRoom = () => {
     };
 
     return (
+        // <p>Lol private</p>
         <Room
             roomClient={roomClient}
+            isProducing={isProducing}
             handleMute={handleMute}
             handleUnmute={handleUnmute}
             handleVideoDisable={handleVideoDisable}
@@ -63,6 +74,7 @@ const PrivateRoom = () => {
 
 const Room = ({
     roomClient,
+    isProducing,
     handleMute,
     handleUnmute,
     handleVideoDisable,

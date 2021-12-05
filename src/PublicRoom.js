@@ -1,40 +1,31 @@
-import React, { useEffect, useRef } from 'react'
+import React, { useEffect } from "react";
+import { useParams } from "react-router";
+import { Link } from "react-router-dom";
 
-import RoomClient from './RoomClient';
+import RoomClient from "./RoomClient";
 
-// Admin name
-const roomName = window.location.pathname.split("/")[1];
+const PublicRoom = ({ roomClient }) => {
+    const { room } = useParams();
 
-const isProducing = window.location.search.includes("admin");
-const isConsuming = !window.location.search.includes("admin");
-
-const PublicRoom = () => {
-
-  const roomClient = useRef();
-
-  useEffect(() => {
-      if (!roomClient.current) {
-
-          roomClient.current = new RoomClient({
-              roomName,
-              userId: "12345",
-              produce: isProducing,
-              consume: isConsuming,
-          });
-
-          roomClient.current.join();
-      }
-      return () => {
-          if (roomClient.current) {
-              roomClient.current.close();
+    useEffect(() => {
+        if (roomClient.current) {
+          console.log('JOINING ROOM', room);
+          if (!roomClient.current._socket) {
+            roomClient.current.joinPublicRoom(room);
           }
-      };
-  });
-  return (
-    <div>
-      
-    </div>
-  )
-}
+        }
 
-export default PublicRoom
+        // Might have to add cleanup (state and mediasoup)
+        return () => {
+        }
+    });
+    return (
+        <div>
+            <h1>WELCOME TO THE PUBLIC ROOM</h1>
+            <Link to={`/${room}/9795848`}>Private Room</Link>
+            <Link to={`/${room}/9795848?admin`}>Create Private Room</Link>
+        </div>
+    );
+};
+
+export default PublicRoom;

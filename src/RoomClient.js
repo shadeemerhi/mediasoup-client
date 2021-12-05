@@ -3,15 +3,10 @@ import * as mediasoupClient from "mediasoup-client";
 
 // Redux
 import store from "./redux/store";
-import * as mediasoupActions from './redux/actions/mediasoup';
+import * as mediasoupActions from "./redux/actions/mediasoup";
 
 export default class RoomClient {
-    constructor({
-        roomName,
-        userId,
-        produce,
-        consume
-    }) {
+    constructor({ roomName, userId, produce, consume }) {
         this._roomName = roomName;
 
         this._userId = userId;
@@ -57,18 +52,32 @@ export default class RoomClient {
             console.log("NEW CONSUMER!!!");
         });
 
-        this._socket.on('new-producer', ({ producerId }) => {
-            console.log('NEW PRODUCER', producerId);
+        this._socket.on("new-producer", ({ producerId }) => {
+            console.log("NEW PRODUCER", producerId);
             this.connectRecvTransport(producerId);
         });
 
-        this._socket.on('producer-closed', ({ consumerId, remoteProducerId }) => {
-            console.log('THIS PRODUCER CLOSED', remoteProducerId, consumerId);
+        this._socket.on(
+            "producer-closed",
+            ({ consumerId, remoteProducerId }) => {
+                console.log(
+                    "THIS PRODUCER CLOSED",
+                    remoteProducerId,
+                    consumerId
+                );
 
-            // TODO - Dispatch to remove consumer from state as well
-            store.dispatch(mediasoupActions.removeConsumer(consumerId));
+                // TODO - Dispatch to remove consumer from state as well
+                store.dispatch(mediasoupActions.removeConsumer(consumerId));
+            }
+        );
 
-        })
+        this._socket.on("consumer-paused", ({ consumerId }) => {
+            store.dispatch(mediasoupActions.pauseConsumer(consumerId));
+        });
+
+        this._socket.on("consumer-resumed", ({ consumerId }) => {
+            store.dispatch(mediasoupActions.resumeConsumer(consumerId));
+        });
 
         // Close mediasoup Transports.
         if (this._sendTransport) {
@@ -212,13 +221,13 @@ export default class RoomClient {
     async getProducers() {
         this._socket.emit("getProducers", (producerIds) => {
             console.log("HERE ARE PRODUCER IDS", producerIds);
-            producerIds.forEach(id => this.connectRecvTransport(id));
+            producerIds.forEach((id) => this.connectRecvTransport(id));
         });
     }
 
     async enableVideo() {
-        console.log('enableVideo()');
-        // if (this._webcamProducer) return;
+        console.log("enableVideo()");
+        if (this._webcamProducer) return;
 
         // Will move into config file
         let params = {
@@ -267,10 +276,12 @@ export default class RoomClient {
         };
 
         this._webcamProducer = await this._sendTransport.produce(params);
-        console.log('HERE IS WEBCAM PRODCUER', this._webcamProducer.id);
+        console.log("HERE IS WEBCAM PRODCUER", this._webcamProducer.id);
 
         // Add producer to state
-        store.dispatch(mediasoupActions.addProducer({ ...this._webcamProducer }));
+        store.dispatch(
+            mediasoupActions.addProducer({ ...this._webcamProducer })
+        );
 
         this._webcamProducer.on("trackended", () => {
             console.log("track ended");
@@ -284,28 +295,33 @@ export default class RoomClient {
     }
 
     async disableVideo() {
-        console.log('disableVideo()');
-        console.log('HERE IS THIS', this);
+        console.log("disableVideo()");
+        console.log("HERE IS THIS", this);
 
         if (!this._webcamProducer) return;
 
         this._webcamProducer.close();
 
         // Remove producer from state
-        console.log('BEFORE REMOVAL', this._webcamProducer.id);
-        store.dispatch(mediasoupActions.removeProducer(this._webcamProducer.id));
+        console.log("BEFORE REMOVAL", this._webcamProducer.id);
+        store.dispatch(
+            mediasoupActions.removeProducer(this._webcamProducer.id)
+        );
 
         try {
             // Add callback to handle error
-            this._socket.emit('closeProducer', { producerId: this._webcamProducer.id }, ({ error }) => {
-                if (error) throw new Error(error)
-            });
+            this._socket.emit(
+                "closeProducer",
+                { producerId: this._webcamProducer.id },
+                ({ error }) => {
+                    if (error) throw new Error(error);
+                }
+            );
         } catch (error) {
             console.log(error);
         }
 
         this._webcamProducer = null;
-
     }
 
     async enableMic() {
@@ -347,23 +363,35 @@ export default class RoomClient {
     }
 
     muteMic() {
-        console.log('muteMic()');
+        console.log("muteMic()");
         this._micProducer.pause();
 
         try {
-            this._socket.emit('pauseProducer', { producerId: this._micProducer.id }, () => {
-                store.dispatch(mediasoupActions.pauseProducer(this._micProducer.id));
-            })
+            this._socket.emit(
+                "pauseProducer",
+                { producerId: this._micProducer.id },
+                () => {
+                    store.dispatch(
+                        mediasoupActions.pauseProducer(this._micProducer.id)
+                    );
+                }
+            );
         } catch (error) {
-            console.log('muteMic() error');
+            console.log("muteMic() error");
         }
     }
 
     unmuteMic() {
-        console.log('unmuteMic()');
-        this._socket.emit('resumeProducer', { producerId: this._micProducer.id }, () => {
-            store.dispatch(mediasoupActions.resumeProducer(this._micProducer.id));
-        });
+        console.log("unmuteMic()");
+        this._socket.emit(
+            "resumeProducer",
+            { producerId: this._micProducer.id },
+            () => {
+                store.dispatch(
+                    mediasoupActions.resumeProducer(this._micProducer.id)
+                );
+            }
+        );
         try {
             this._micProducer.resume();
         } catch (error) {
@@ -374,7 +402,6 @@ export default class RoomClient {
     async loadDevice(routerRtpCapabilities) {
         await this._mediasoupDevice.load({ routerRtpCapabilities });
     }
-
 
     async connectRecvTransport(remoteProducerId) {
         // consumerTransport,

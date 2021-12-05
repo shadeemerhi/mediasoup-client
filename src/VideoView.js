@@ -37,14 +37,14 @@ const VideoView = (props) => {
 
         // Need to add something so we don't hear our own audio
         if (audioConsumer && audioTrack && !audioConsumer?._paused) {
-          const stream = new MediaStream();
-          stream.addTrack(audioTrack);
-          audioElem.current.srcObject = stream;
+            const stream = new MediaStream();
+            stream.addTrack(audioTrack);
+            audioElem.current.srcObject = stream;
+            audioElem.current.play().catch(err => console.log(err));
+        } else {
+            audioElem.current.srcObject = null;
         }
-        else {
-          audioElem.current.srcObject = null;
-        }
-    }, [videoTrack, audioProducer, audioTrack]);
+    }, [videoTrack, audioProducer, audioTrack, audioConsumer]);
 
     return (
         <div>
@@ -65,12 +65,12 @@ const VideoView = (props) => {
             ) : (
                 <VideocamOffIcon onClick={handleVideoEnable} fontSize="large" />
             )}
-            {!audioProducer?._paused ? (
-                <MicIcon onClick={handleMute} fontSize="large" />
-            ) : (
+            {audioProducer?._paused || audioConsumer?._paused ? (
                 <MicOffIcon onClick={handleUnmute} fontSize="large" />
+            ) : (
+                <MicIcon onClick={handleMute} fontSize="large" />
             )}
-            <audio autoPlay playsInline controls ref={audioElem} />
+            <audio autoPlay playsInline ref={audioElem} />
         </div>
     );
 };

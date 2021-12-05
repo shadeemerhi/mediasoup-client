@@ -20,28 +20,30 @@ const consumers = (state = initialState, action) => {
 
             return newState;
         }
-        // case "PAUSE_PRODUCER": {
-        //     const { producerId } = action.payload;
-        //     console.log("PAUSE PRODUCER", producerId);
+        case "PAUSE_CONSUMER": {
+            const { consumerId } = action.payload;
+            console.log("PAUSE CONSUMER", consumerId);
 
-        //     const producer = state[producerId];
-        //     const newProducer = { ...producer, _paused: true };
-        //     return {
-        //         ...state,
-        //         [producerId]: newProducer,
-        //     };
-        // }
+            const consumer = state[consumerId];
+            const newConsumer = { ...consumer, _paused: true };
+            return {
+                ...state,
+                [consumerId]: newConsumer,
+            };
+        }
 
-        // case "RESUME_PRODUCER": {
-        //     const { producerId } = action.payload;
-        //     console.log("RESUME PRODUCER", producerId);
-        //     const producer = state[producerId];
-        //     const newProducer = { ...producer, _paused: false };
-        //     return {
-        //         ...state,
-        //         [producerId]: newProducer,
-        //     };
-        // }
+        case "RESUME_CONSUMER": {
+            const { consumerId } = action.payload;
+            console.log("RESUME CONSUMER", consumerId);
+
+            const consumer = state[consumerId];
+            const newConsumer = { ...consumer, _paused: false };
+
+            return {
+                ...state,
+                [consumerId]: newConsumer,
+            };
+        }
         default:
             return state;
     }

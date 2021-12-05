@@ -32,3 +32,13 @@ export const removeConsumer = (consumerId) => ({
     type: "REMOVE_CONSUMER",
     payload: { consumerId },
 });
+
+export const pauseConsumer = (consumerId) => ({
+  type: 'PAUSE_CONSUMER',
+  payload: { consumerId }
+});
+
+export const resumeConsumer = (consumerId) => ({
+  type: 'RESUME_CONSUMER',
+  payload: { consumerId }
+})

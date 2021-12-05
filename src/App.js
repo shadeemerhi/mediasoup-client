@@ -6,12 +6,11 @@ import { Provider } from "react-redux";
 import store from "./redux/store";
 
 function App() {
-    const [ready, setReady] = useState(false);
-
-    useEffect(() => {
-        setReady(true);
-    }, []);
-    return <Provider store={store}>{ready ? <Room /> : <></>}</Provider>;
+    return (
+        <Provider store={store}>
+            <Room />
+        </Provider>
+    );
 }
 
 export default App;

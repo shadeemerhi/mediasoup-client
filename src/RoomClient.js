@@ -413,16 +413,20 @@ export default class RoomClient {
         console.log('muteMic()');
         this._micProducer.pause();
 
-        // try {
-        //     this._socket.emit('pauseProducer', { producerId: this._micProducer.id })
-        // } catch (error) {
-        //     console.log('muteMic() error');
-        // }
+        try {
+            this._socket.emit('pauseProducer', { producerId: this._micProducer.id }, () => {
+                store.dispatch(producerActions.pauseProducer(this._micProducer.id));
+            })
+        } catch (error) {
+            console.log('muteMic() error');
+        }
     }
 
     unmuteMic() {
         console.log('unmuteMic()');
-        this._socket.emit('resumeProducer', ({ producerId: this._micProducer.id }))
+        this._socket.emit('resumeProducer', { producerId: this._micProducer.id }, () => {
+            store.dispatch(producerActions.resumeProducer(this._micProducer.id));
+        });
         try {
             this._micProducer.resume();
         } catch (error) {
@@ -489,6 +493,7 @@ export default class RoomClient {
                     const stream = new MediaStream;
                     stream.addTrack(track)
                     this._audioElem.current.srcObject = stream;
+                    this._audioElem.current.play().catch(error => console.log(error))
 
                 }
 

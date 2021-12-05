@@ -97,18 +97,19 @@ const Room = ({
     const videoTrack = videoProducer?._track;
     const audioTrack = audioProducer?._track;
 
-    const me = useRef();
+    const videoElem = useRef();
 
     useEffect(() => {
+        if (!isProducing) return;
         if (videoTrack) {
             console.log('LOL FUCK', videoTrack);
             const stream = new MediaStream;
             stream.addTrack(videoTrack);
-            me.current.srcObject = stream;
+            videoElem.current.srcObject = stream;
         }
         else {
             console.log('ELSE ELSE ELSE');
-            me.current.srcObject = null;
+            videoElem.current.srcObject = null;
         }
     }, [videoTrack]);
 
@@ -117,41 +118,29 @@ const Room = ({
         <div>
             {isProducing && (
                 <div>
-                    {/* <video
-                        playsInline
-                        muted
-                        autoPlay
-                        controls
-                        ref={localVideo}
-                        width={400}
-                    /> */}
-                    <div style={{ position: 'relative', width: '100vw', height: '300px', border: '1px solid red' }}>
+                    <div
+                        // style={{ position: 'relative', width: '100vw', height: '300px', border: '1px solid red' }}
+                    >
                         
                         <video
                             playsInline
                             muted
                             autoPlay
-                            // controls
-                            ref={me}
-                            // width={300}
+                            controls
+                            ref={videoElem}
+                            width={300}
                             style={{
-                                position: 'absolute',
-                                right: 0,
-                                bottom: 0,
-                                minWidth: '100%',
-                                minHeight: '100%',
-                                width: 'auto',
-                                height: 'auto',
-                                backgroundSize: 'cover',
-                                overflow: 'hidden'
+                                width: '100vw',
+                                height: '300px',
                             }}
                         />
                     </div>
-                    {videoTrack ? <VideocamIcon /> : <VideocamOffIcon />}
-                    <button onClick={handleMute}>Mute</button>
+                    {videoTrack ? <VideocamIcon onClick={handleVideoDisable} fontSize="large" /> : <VideocamOffIcon onClick={handleVideoEnable} fontSize="large" />}
+                    {!audioProducer?._paused ? <MicIcon onClick={handleMute} fontSize="large" /> : <MicOffIcon onClick={handleUnmute} fontSize="large" />}
+                    {/* <button onClick={handleMute}>Mute</button>
                     <button onClick={handleUnmute}>Unmute</button>
                     <button onClick={handleVideoDisable}>Disable Video</button>
-                    <button onClick={handleVideoEnable}>Enable Video</button>
+                    <button onClick={handleVideoEnable}>Enable Video</button> */}
                 </div>
             )}
             {!isProducing && (
@@ -164,7 +153,7 @@ const Room = ({
                     width={400}
                 />
             )}
-            <audio autoPlay playsInline muted controls ref={audioElem} />
+            <audio autoPlay playsInline controls ref={audioElem} />
         </div>
     );
 };

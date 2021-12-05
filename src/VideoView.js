@@ -1,4 +1,7 @@
-import React, { useEffect, useRef } from "react";
+import React, { useEffect, useRef, useState } from "react";
+
+// Components
+import AcceptAudioModal from "./AcceptAudioModal";
 
 // MUI
 import VideocamIcon from "@mui/icons-material/Videocam";
@@ -21,6 +24,8 @@ const VideoView = (props) => {
         handleVideoEnable,
     } = props;
 
+    const [acceptAudio, setAcceptAudio] = useState(false);
+
     const videoElem = useRef();
     const audioElem = useRef();
 
@@ -40,7 +45,7 @@ const VideoView = (props) => {
             const stream = new MediaStream();
             stream.addTrack(audioTrack);
             audioElem.current.srcObject = stream;
-            audioElem.current.play().catch(err => console.log(err));
+            // audioElem.current.play().catch(err => console.log(err));
         } else {
             audioElem.current.srcObject = null;
         }
@@ -71,6 +76,12 @@ const VideoView = (props) => {
                 <MicIcon onClick={handleMute} fontSize="large" />
             )}
             <audio autoPlay playsInline ref={audioElem} />
+            {audioConsumer && !acceptAudio && (
+                <AcceptAudioModal
+                    audioElem={audioElem}
+                    setAcceptAudio={setAcceptAudio}
+                />
+            )}
         </div>
     );
 };

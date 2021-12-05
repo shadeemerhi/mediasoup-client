@@ -424,7 +424,7 @@ export default class RoomClient {
                     return;
                 }
 
-                console.log(`Consumer Params ${params}`);
+                console.log(`Consumer Params`, params);
                 // then consume with the local consumer transport
                 // which creates a consumer
                 const consumer = await this._recvTransport.consume({
@@ -435,7 +435,7 @@ export default class RoomClient {
                 });
 
                 // Add consumer to state
-                store.dispatch(mediasoupActions.addConsumer({ ...consumer }));
+                store.dispatch(mediasoupActions.addConsumer({ ...consumer, _paused: params.producerPaused }));
 
                 // the server consumer started with media paused
                 // so we need to inform the server to resume

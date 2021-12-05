@@ -25,8 +25,8 @@ const Admin = (props) => {
             roomClient={props.roomClient}
             videoProducer={videoProducer}
             audioProducer={audioProducer}
-            videoTrack={videoTrack}
-            audioTrack={audioTrack}
+            videoTrack={videoProducer ? videoProducer._track : null}
+            audioTrack={audioProducer ? audioProducer._track : null}
             handleMute={handleMute}
             handleUnmute={handleUnmute}
             handleVideoDisable={handleVideoDisable}

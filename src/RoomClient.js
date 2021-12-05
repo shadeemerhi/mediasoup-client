@@ -10,20 +10,11 @@ export default class RoomClient {
         roomName,
         userId,
         produce,
-        consume,
-        localVideo,
-        remoteVideo,
-        audioElem
+        consume
     }) {
         this._roomName = roomName;
 
         this._userId = userId;
-
-        this._localVideo = localVideo;
-
-        this._remoteVideo = remoteVideo;
-
-        this._audioElem = audioElem;
 
         this._produce = produce;
 
@@ -77,8 +68,6 @@ export default class RoomClient {
             // TODO - Dispatch to remove consumer from state as well
             store.dispatch(mediasoupActions.removeConsumer(consumerId));
 
-
-            // this._remoteVideo.current.srcObject = null;
         })
 
         // Close mediasoup Transports.
@@ -214,7 +203,6 @@ export default class RoomClient {
                     }
                 );
 
-                // this.consumeHost();
                 this.getProducers();
                 console.log("EVERYTHING WORKS", this);
             }
@@ -225,60 +213,7 @@ export default class RoomClient {
         this._socket.emit("getProducers", (producerIds) => {
             console.log("HERE ARE PRODUCER IDS", producerIds);
             producerIds.forEach(id => this.connectRecvTransport(id));
-            // this.connectRecvTransport(producerIds[1])
         });
-    }
-
-    async consumeHost() {
-        console.log("INSIDE CONSUME HOST");
-        this._socket.emit(
-            "consumeHost",
-            {
-                rtpCapabilities: this._mediasoupDevice.rtpCapabilities,
-                transportId: this._recvTransport.id,
-            },
-            async ({ params }) => {
-                if (params.error) {
-                    console.log("Cannot consume", params.error);
-                    return;
-                }
-
-                console.log("AFTER SERVER SIDE", params);
-
-                const {
-                    id,
-                    producerId,
-                    kind,
-                    rtpParameters,
-                    serverConsumerId,
-                } = params;
-
-                const consumer = await this._recvTransport.consume({
-                    id,
-                    producerId,
-                    kind,
-                    rtpParameters,
-                });
-
-                const { track } = consumer;
-                console.log("HERE IS TRACK", track);
-
-           
-
-                this._remoteVideo.current.srcObject = new MediaStream([track]);
-                this._remoteVideo.current.style.border = "2px solid red";
-
-                console.log("HERE IS THIS", this);
-
-                /**
-                 * Issue here are consumer cannot be found on the server as I don't think it's
-                 * currently being added right
-                 */
-                this._socket.emit("consumer-resume", {
-                    serverConsumerId,
-                });
-            }
-        );
     }
 
     async enableVideo() {
@@ -323,10 +258,6 @@ export default class RoomClient {
                 },
             },
         });
-
-        // Update UI
-        // this._localVideo.current.srcObject = stream;
-        // this._localVideo.current.style.border = "2px solid black";
 
         const track = stream.getVideoTracks()[0];
 
@@ -469,11 +400,6 @@ export default class RoomClient {
                 console.log(`Consumer Params ${params}`);
                 // then consume with the local consumer transport
                 // which creates a consumer
-                console.log(
-                    "ABOUT TO CALL CLIENT SIDE CONSUME",
-                    remoteProducerId,
-                    params.producerId
-                );
                 const consumer = await this._recvTransport.consume({
                     id: params.id,
                     producerId: params.producerId,
@@ -481,57 +407,8 @@ export default class RoomClient {
                     rtpParameters: params.rtpParameters,
                 });
 
+                // Add consumer to state
                 store.dispatch(mediasoupActions.addConsumer({ ...consumer }));
-
-
-
-                // consumerTransports = [
-                //     ...consumerTransports,
-                //     {
-                //         // consumerTransport,
-                //         consumerTransport: recvTransport,
-                //         serverConsumerTransportId: params.id,
-                //         producerId: remoteProducerId,
-                //         consumer,
-                //     },
-                // ];
-
-                // destructure and retrieve the video track from the producer
-                const { track } = consumer;
-                console.log('HERE IS TRACK', track);
-                if (params.kind === 'audio') {
-                    // const stream = new MediaStream;
-                    // stream.addTrack(track)
-                    // this._audioElem.current.srcObject = stream;
-                    // this._audioElem.current.play().catch(error => console.log(error))
-
-                }
-
-                if (params.kind === 'video') {
-                    // const stream = new MediaStream;
-                    // stream.addTrack(track);
-                    // this._remoteVideo.current.srcObject = stream;
-
-                    // this._remoteVideo.current.play().catch(error => console.log(error));
-
-                    // this._remoteVideo.current.onplay = () => {
-                    //     console.log('THIS IS PLAYING LOL');
-                    //     this._audioElem.current.play().catch(error => console.log(error));
-                    // }
-                }
-
-
-                // if (this._remoteVideo.current.srcObject) {
-                //     const newStream = this._remoteVideo.current.srcObject;
-                //     newStream.addTrack(track);
-                //     this._remoteVideo.current.srcObject = newStream;
-                //     console.log('NEW STREAM', newStream);
-                // }
-                // else {
-                // }
-                // this._remoteVideo.current.srcObject = new MediaStream([track]);
-
-                // this._remoteVideo.current.style.border = "2px solid red";
 
                 // the server consumer started with media paused
                 // so we need to inform the server to resume

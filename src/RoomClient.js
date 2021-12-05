@@ -7,7 +7,12 @@ import * as mediasoupActions from "./redux/actions/mediasoup";
 
 export default class RoomClient {
     constructor({ roomName, userId, produce, consume }) {
+
+        // Private room id - to be renamed to uuid or something
         this._roomName = roomName;
+        
+        // Public room id - will be admin username
+        this._publicRoomName = null;
 
         this._userId = userId;
 
@@ -38,15 +43,40 @@ export default class RoomClient {
         this._socket.off();
     }
 
-    async join() {
-        console.log("JOIN METHOD BEING CALLED");
+
+    // WILL BE RESPONSIBLE FOR ESTABLISHING SOCKET CONNECTION
+    async joinPublicRoom() {
+        console.log('JOINING PUBLIC ROOM');
         const socketConnection = io("http://localhost:4000/mediasoup");
         this._socket = socketConnection;
 
+        // emit join public room event
         this._socket.on("connection-success", ({ socketId }) => {
             console.log("SUCCESSFUL SOCKET CONNECTION", socketId);
             this._initializeRoom();
         });
+    }
+
+    // WILL BE RESPONSIBLE FOR MEDIA SOUP SOCKET EVENTS
+    async join() {
+        console.log("JOIN METHOD BEING CALLED");
+        // NEW
+        // const socketConnection = io("http://localhost:4000/mediasoup");
+        // this._socket = socketConnection;
+
+        /**
+         * if there is a socket connection (which there should be) - will handle case if there isnt
+         * Not totally sure what this will look like yet
+         */
+        if (this._socket) {
+            // Join private room
+            this._initializeRoom();
+        }
+
+        // this._socket.on("connection-success", ({ socketId }) => {
+        //     console.log("SUCCESSFUL SOCKET CONNECTION", socketId);
+        //     this._initializeRoom();
+        // });
 
         this._socket.on("new-consumer", () => {
             console.log("NEW CONSUMER!!!");
@@ -91,11 +121,13 @@ export default class RoomClient {
         }
     }
 
+    // INITIALIZING PRIVATE ROOM - WILL LIKELY RENAME METHOD
     async _initializeRoom() {
         try {
             this._mediasoupDevice = new mediasoupClient.Device();
 
             // Get routerRtpCapabilities from the server
+            // JOINING PRIVATE ROOM
             this._socket.emit(
                 "joinRoom",
                 { roomName: this._roomName, isAdmin: this._produce },

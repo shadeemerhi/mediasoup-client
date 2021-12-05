@@ -1,6 +1,5 @@
-import { useEffect, useState } from "react";
 import "./App.css";
-import Room from "./Room";
+import PrivateRoom from './PrivateRoom';
 
 import { Provider } from "react-redux";
 import store from "./redux/store";
@@ -8,7 +7,7 @@ import store from "./redux/store";
 function App() {
     return (
         <Provider store={store}>
-            <Room />
+            <PrivateRoom />
         </Provider>
     );
 }

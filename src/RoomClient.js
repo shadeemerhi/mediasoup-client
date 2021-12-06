@@ -59,7 +59,15 @@ export default class RoomClient {
         
         this._socket.on('left-public-room', ({ userId }) => {
             console.log(`USER ${userId} LEFT`);
-        })
+        });
+
+        this._socket.on('joined-private-room', () => {
+            console.log('BUDDY JOINED THE PRIVATE ROOM!');
+        });
+
+        this._socket.on('left-private-room', () => {
+            console.log('BUDDY LEFT THE PRIVATE ROOM');
+        });
     }
 
     joinPublicRoom() {
@@ -506,7 +514,7 @@ export default class RoomClient {
 
     // Cleanup methods
     leavePrivateRoom() {
-        this._socket.emit("leave-private-room");
+        this._socket.emit("leave-private-room", { roomName: this._roomName });
 
         // Producer
         this._webcamProducer = null;

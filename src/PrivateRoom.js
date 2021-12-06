@@ -35,6 +35,7 @@ const PrivateRoom = ({ roomClient }) => {
         }
         // Might have to add cleanup
         return () => {
+            // Need to also emit this on tab close
             roomClient.current.leavePrivateRoom();
 
             // Maybe check if existing first
@@ -42,6 +43,12 @@ const PrivateRoom = ({ roomClient }) => {
             store.dispatch(emptyConsumers());
         };
     }, [room, privateId, roomClient]);
+
+    
+    // Doesn't seem to be working
+    window.addEventListener('beforeunload', () => {
+        roomClient.current.leavePrivateRoom();
+    })
 
     const handleMute = () => {
         roomClient.current.muteMic();

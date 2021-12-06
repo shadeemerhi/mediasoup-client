@@ -9,6 +9,9 @@ const Home = () => {
             <div>
                 <Link to="/shadmerhi">Shadee Merhi</Link>
             </div>
+            <div>
+                <Link to="/shadmerhi?admin">CREATE LIVE ROOM</Link>
+            </div>
         </div>
     );
 };

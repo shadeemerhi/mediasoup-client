@@ -50,7 +50,7 @@ export default class RoomClient {
         // emit join public room event
         this._socket.on("connection-success", ({ socketId }) => {
             console.log("SUCCESSFUL SOCKET CONNECTION", socketId);
-            // this._initializeRoom();
+            // this._initializePrivateRoom();
             // Will emit join-public-room event of some kind
         });
     }
@@ -62,7 +62,6 @@ export default class RoomClient {
         produce = this._produce,
         consume = this._consume
     ) {
-
         this._publicRoomName = publicRoomId;
         this._roomName = privateRoomId;
         this._produce = produce;
@@ -89,14 +88,14 @@ export default class RoomClient {
          */
         if (this._socket) {
             // Join private room
-            this._initializeRoom();
+            this._initializePrivateRoom();
         } else {
             this.joinPublicRoom(publicRoomId);
         }
 
         // this._socket.on("connection-success", ({ socketId }) => {
         //     console.log("SUCCESSFUL SOCKET CONNECTION", socketId);
-        //     this._initializeRoom();
+        //     this._initializePrivateRoom();
         // });
 
         this._socket.on("new-consumer", () => {
@@ -143,7 +142,7 @@ export default class RoomClient {
     }
 
     // INITIALIZING PRIVATE ROOM - WILL LIKELY RENAME METHOD
-    async _initializeRoom() {
+    async _initializePrivateRoom() {
         try {
             this._mediasoupDevice = new mediasoupClient.Device();
 
@@ -506,7 +505,7 @@ export default class RoomClient {
 
     // Cleanup methods
     leavePrivateRoom() {
-        this._socket.emit('leave-private-room');
+        this._socket.emit("leave-private-room");
 
         // Producer
         this._webcamProducer = null;
@@ -519,5 +518,4 @@ export default class RoomClient {
         this._socket.disconnect();
         this._socket.off();
     }
-
 }

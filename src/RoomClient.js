@@ -35,7 +35,7 @@ export default class RoomClient {
         this._consumers = new Map();
     }
     // WILL BE RESPONSIBLE FOR ESTABLISHING SOCKET CONNECTION - PUBLIC ROOM EVENTS
-    async joinPublicRoom(publicRoomName) {
+    _initializePublicRoom(publicRoomName) {
         this._publicRoomName = publicRoomName;
         console.log("JOINING PUBLIC ROOM", this._publicRoomName);
         const socketConnection = io("http://localhost:4000/mediasoup");
@@ -50,8 +50,29 @@ export default class RoomClient {
         // emit join public room event
         this._socket.on("connection-success", ({ socketId }) => {
             console.log("SUCCESSFUL SOCKET CONNECTION", socketId);
-            // this._initializePrivateRoom();
-            // Will emit join-public-room event of some kind
+            this.joinPublicRoom();
+        });
+
+        this._socket.on("joined-public-room", ({ userId }) => {
+            console.log(`USER ${userId} JOINED!`);
+        });
+        
+        this._socket.on('left-public-room', ({ userId }) => {
+            console.log(`USER ${userId} LEFT`);
+        })
+    }
+
+    joinPublicRoom() {
+        this._socket.emit("join-public-room", {
+            userId: "someRandomId",
+            roomName: this._publicRoomName,
+        });
+    }
+
+    leavePublicRoom() {
+        this._socket.emit("leave-public-room", {
+            userId: 'someRandomId',
+            roomName: this._publicRoomName,
         });
     }
 
@@ -66,21 +87,6 @@ export default class RoomClient {
         this._roomName = privateRoomId;
         this._produce = produce;
         this._consume = consume;
-        // if (!this._produce) {
-        //     this._produce = produce;
-        // }
-
-        // if (!this._consume) {
-        //     this._consume = consume;
-        // }
-
-        // if (!this._roomName) {
-        //     this._roomName = privateRoomId;
-        // }
-        console.log("JOIN METHOD BEING CALLED");
-        // NEW
-        // const socketConnection = io("http://localhost:4000/mediasoup");
-        // this._socket = socketConnection;
 
         /**
          * if there is a socket connection (which there should be) - will handle case if there isnt
@@ -90,13 +96,8 @@ export default class RoomClient {
             // Join private room
             this._initializePrivateRoom();
         } else {
-            this.joinPublicRoom(publicRoomId);
+            this._initializePublicRoom(publicRoomId);
         }
-
-        // this._socket.on("connection-success", ({ socketId }) => {
-        //     console.log("SUCCESSFUL SOCKET CONNECTION", socketId);
-        //     this._initializePrivateRoom();
-        // });
 
         this._socket.on("new-consumer", () => {
             console.log("NEW CONSUMER!!!");

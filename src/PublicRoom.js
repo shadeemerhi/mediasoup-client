@@ -9,15 +9,22 @@ const PublicRoom = ({ roomClient }) => {
 
     useEffect(() => {
         if (roomClient.current) {
-          console.log('JOINING ROOM', room);
-          if (!roomClient.current._socket) {
-            roomClient.current.joinPublicRoom(room);
-          }
+            console.log("JOINING ROOM", room);
+            if (!roomClient.current._socket) {
+                roomClient.current._initializePublicRoom(room);
+            }
+            else {
+              // Socket to join public room - skips init
+              roomClient.current.joinPublicRoom();
+            }
         }
 
         // Might have to add cleanup (state and mediasoup)
         return () => {
-        }
+          if (roomClient.current) {
+            roomClient.current.leavePublicRoom();
+          }
+        };
     });
     return (
         <div>

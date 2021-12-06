@@ -8,6 +8,7 @@ import VideocamIcon from "@mui/icons-material/Videocam";
 import VideocamOffIcon from "@mui/icons-material/VideocamOff";
 import MicIcon from "@mui/icons-material/Mic";
 import MicOffIcon from "@mui/icons-material/MicOff";
+import Avatar from '@mui/material/Avatar'
 
 const VideoView = (props) => {
     const {
@@ -63,8 +64,23 @@ const VideoView = (props) => {
                 style={{
                     width: "100vw",
                     height: "300px",
+                    display: `${!videoTrack ? "none" : ""}`,
                 }}
             />
+            {!videoTrack && (
+                <div
+                    style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        height: "300px",
+                        width: "100vw",
+                        border: "1px solid grey",
+                    }}
+                >
+                    <Avatar sx={{ width: 100, height: 100 }}>S</Avatar>
+                </div>
+            )}
             {videoTrack ? (
                 <VideocamIcon onClick={handleVideoDisable} fontSize="large" />
             ) : (

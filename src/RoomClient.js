@@ -244,8 +244,8 @@ export default class RoomClient {
                     }
                 );
 
-                // this.enableVideo();
-                // this.enableMic();
+                this.enableVideo();
+                this.enableMic();
             }
         );
     }

@@ -34,6 +34,18 @@ export default class RoomClient {
 
         this._consumers = new Map();
     }
+
+    createPrivateRoom(roomId) {
+        console.log('INSIDE PRIVATE ROOM CREATION', roomId);
+        if (this._socket) {
+            this._socket.emit('create-private-room', { roomId }, ({ roomId, socketId }) => {
+                console.log('BACK FROM SERVER', roomId, socketId);
+            })
+        }
+    }
+
+
+
     // WILL BE RESPONSIBLE FOR ESTABLISHING SOCKET CONNECTION - PUBLIC ROOM EVENTS
     _initializePublicRoom(publicRoomName) {
         this._publicRoomName = publicRoomName;
@@ -61,13 +73,13 @@ export default class RoomClient {
             console.log(`USER ${userId} LEFT`);
         });
 
-        this._socket.on('joined-private-room', () => {
-            console.log('BUDDY JOINED THE PRIVATE ROOM!');
-        });
+        // this._socket.on('joined-private-room', () => {
+        //     console.log('BUDDY JOINED THE PRIVATE ROOM!');
+        // });
 
-        this._socket.on('left-private-room', () => {
-            console.log('BUDDY LEFT THE PRIVATE ROOM');
-        });
+        // this._socket.on('left-private-room', () => {
+        //     console.log('BUDDY LEFT THE PRIVATE ROOM');
+        // });
     }
 
     joinPublicRoom() {
@@ -158,7 +170,7 @@ export default class RoomClient {
             // Get routerRtpCapabilities from the server
             // JOINING PRIVATE ROOM
             this._socket.emit(
-                "joinRoom",
+                "join-private-room",
                 { roomName: this._roomName, isAdmin: this._produce },
                 async (data) => {
                     const routerRtpCapabilities = data.rtpCapabilities;
@@ -232,8 +244,8 @@ export default class RoomClient {
                     }
                 );
 
-                this.enableVideo();
-                this.enableMic();
+                // this.enableVideo();
+                // this.enableMic();
             }
         );
     }

@@ -32,11 +32,17 @@ const PublicRoom = ({ roomClient }) => {
           }
         };
     });
+
+    const createPrivateRoom = () => {
+      const roomId = '9795848';
+      roomClient.current.createPrivateRoom(roomId);
+    }
     return (
         <div>
             <h1>WELCOME TO THE PUBLIC ROOM</h1>
             <Link to={`/${room}/9795848`}>Private Room</Link>
-            <Link to={`/${room}/9795848?admin`}>Create Private Room</Link>
+            <button onClick={createPrivateRoom}>Create Private Room</button>
+            <Link to={`/${room}/9795848?admin`}>Go To Private Room</Link>
         </div>
     );
 };

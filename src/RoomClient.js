@@ -164,31 +164,42 @@ export default class RoomClient {
 
     // INITIALIZING PRIVATE ROOM - WILL LIKELY RENAME METHOD
     async _initializePrivateRoom() {
+        console.log('initializePrivateRoom()', this._consume);
         try {
             this._mediasoupDevice = new mediasoupClient.Device();
 
+            this._socket.emit('private-room-request', { roomId: this._roomName }, ({ roomId }) => {
+                console.log('GOT OR CREATED PRIVATE ROOM', roomId);
+                this.joinPrivateRoom();
+            })
+
             // Get routerRtpCapabilities from the server
             // JOINING PRIVATE ROOM
-            this._socket.emit(
-                "join-private-room",
-                { roomName: this._roomName, isAdmin: this._produce },
-                async (data) => {
-                    const routerRtpCapabilities = data.rtpCapabilities;
-                    await this.loadDevice(routerRtpCapabilities);
-
-                    // Create transports depending on user type
-                    if (this._produce) {
-                        this.createSendTransport();
-                    }
-
-                    if (this._consume) {
-                        this.createRecvTransport();
-                    }
-                }
-            );
         } catch (error) {
             console.log("initializeRoom() error");
         }
+    }
+
+    async joinPrivateRoom() {
+        this._socket.emit(
+            "join-private-room",
+            { roomName: this._roomName, isAdmin: this._produce },
+            async (data) => {
+                console.log('BACK FROM SERVER');
+                const routerRtpCapabilities = data.rtpCapabilities;
+                await this.loadDevice(routerRtpCapabilities);
+                
+                // Create transports depending on user type
+                if (this._produce) {
+                    this.createSendTransport();
+                }
+                
+                if (this._consume) {
+                    console.log('THIS IS HAPPENING');
+                    this.createRecvTransport();
+                }
+            }
+        );
     }
 
     async createSendTransport() {
@@ -251,6 +262,7 @@ export default class RoomClient {
     }
 
     async createRecvTransport() {
+        console.log('createRecvTransport()');
         this._socket.emit(
             "createWebRtcTransport",
             { consumer: this._consume },

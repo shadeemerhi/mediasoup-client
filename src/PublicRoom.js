@@ -40,9 +40,10 @@ const PublicRoom = ({ roomClient }) => {
     return (
         <div>
             <h1>WELCOME TO THE PUBLIC ROOM</h1>
-            <Link to={`/${room}/9795848`}>Private Room</Link>
-            <button onClick={createPrivateRoom}>Create Private Room</button>
-            <Link to={`/${room}/9795848?admin`}>Go To Private Room</Link>
+            <Link to={`/${room}/9795848`}>Private Room (non admin)</Link>
+            <br />
+            {/* <button onClick={createPrivateRoom}>Create Private Room</button> */}
+            <Link to={`/${room}/9795848?admin`}>Go To Private Room (admin)</Link>
         </div>
     );
 };

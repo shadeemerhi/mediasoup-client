@@ -56,17 +56,17 @@ export default class RoomClient {
         this._socket.on("joined-public-room", ({ userId }) => {
             console.log(`USER ${userId} JOINED!`);
         });
-        
-        this._socket.on('left-public-room', ({ userId }) => {
+
+        this._socket.on("left-public-room", ({ userId }) => {
             console.log(`USER ${userId} LEFT`);
         });
 
-        this._socket.on('joined-private-room', () => {
-            console.log('BUDDY JOINED THE PRIVATE ROOM!');
+        this._socket.on("joined-private-room", () => {
+            console.log("BUDDY JOINED THE PRIVATE ROOM!");
         });
 
-        this._socket.on('left-private-room', () => {
-            console.log('BUDDY LEFT THE PRIVATE ROOM');
+        this._socket.on("left-private-room", () => {
+            console.log("BUDDY LEFT THE PRIVATE ROOM");
         });
     }
 
@@ -79,7 +79,7 @@ export default class RoomClient {
 
     leavePublicRoom() {
         this._socket.emit("leave-public-room", {
-            userId: 'someRandomId',
+            userId: "someRandomId",
             roomName: this._publicRoomName,
         });
     }
@@ -152,31 +152,46 @@ export default class RoomClient {
 
     // INITIALIZING PRIVATE ROOM - WILL LIKELY RENAME METHOD
     async _initializePrivateRoom() {
+        console.log("initializePrivateRoom()", this._consume);
         try {
             this._mediasoupDevice = new mediasoupClient.Device();
 
-            // Get routerRtpCapabilities from the server
-            // JOINING PRIVATE ROOM
             this._socket.emit(
-                "joinRoom",
-                { roomName: this._roomName, isAdmin: this._produce },
-                async (data) => {
-                    const routerRtpCapabilities = data.rtpCapabilities;
-                    await this.loadDevice(routerRtpCapabilities);
-
-                    // Create transports depending on user type
-                    if (this._produce) {
-                        this.createSendTransport();
-                    }
-
-                    if (this._consume) {
-                        this.createRecvTransport();
-                    }
+                "private-room-request",
+                { roomId: this._roomName },
+                ({ roomId }) => {
+                    console.log("GOT OR CREATED PRIVATE ROOM", roomId);
+                    this.joinPrivateRoom();
                 }
             );
+
+            // Get routerRtpCapabilities from the server
+            // JOINING PRIVATE ROOM
         } catch (error) {
             console.log("initializeRoom() error");
         }
+    }
+
+    async joinPrivateRoom() {
+        this._socket.emit(
+            "join-private-room",
+            { roomName: this._roomName, isAdmin: this._produce },
+            async (data) => {
+                console.log("BACK FROM SERVER");
+                const routerRtpCapabilities = data.rtpCapabilities;
+                await this.loadDevice(routerRtpCapabilities);
+
+                // Create transports depending on user type
+                if (this._produce) {
+                    this.createSendTransport();
+                }
+
+                if (this._consume) {
+                    console.log("THIS IS HAPPENING");
+                    this.createRecvTransport();
+                }
+            }
+        );
     }
 
     async createSendTransport() {
@@ -201,6 +216,7 @@ export default class RoomClient {
                             "transport-connect",
                             {
                                 dtlsParameters,
+                                transportId: this._sendTransport.id,
                             },
                             () => {
                                 console.log("TRANSPORT CONNECTED");
@@ -219,7 +235,12 @@ export default class RoomClient {
 
                         this._socket.emit(
                             "transport-produce",
-                            { kind, rtpParameters, appData },
+                            {
+                                transportId: this._sendTransport.id,
+                                kind,
+                                rtpParameters,
+                                appData,
+                            },
                             ({ id, producersExist }) => {
                                 console.log("HERE IS PRODUCER ID", id);
                                 /**
@@ -259,11 +280,17 @@ export default class RoomClient {
                         try {
                             // Signal dtlsParameters to the server-side transport
                             // Will change connection events for both transports to be a single event ('connectWebRtcTransport')
-                            this._socket.emit("transport-recv-connect", {
-                                serverConsumerTransportId:
-                                    this._recvTransport.id,
-                                dtlsParameters,
-                            });
+                            this._socket.emit(
+                                "transport-connect",
+                                {
+                                    dtlsParameters,
+                                    transportId: this._recvTransport.id,
+                                },
+                                () => {
+                                    console.log("TRANSPORT CONNECTED");
+                                    callback();
+                                }
+                            );
 
                             // Tell the transport that parameters were transmitted - move to callback?
                             callback();
@@ -475,9 +502,9 @@ export default class RoomClient {
         this._socket.emit(
             "consume",
             {
+                transportId: this._recvTransport.id,
                 rtpCapabilities: this._mediasoupDevice.rtpCapabilities,
                 remoteProducerId,
-                serverConsumerTransportId: this._recvTransport.id,
             },
             async ({ params }) => {
                 if (params.error) {
